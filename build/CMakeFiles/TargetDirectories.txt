@@ -1,0 +1,4 @@
+/home/bilal/Documents/client-side-raspi/build/CMakeFiles/rebuild_cache.dir
+/home/bilal/Documents/client-side-raspi/build/CMakeFiles/edit_cache.dir
+/home/bilal/Documents/client-side-raspi/build/CMakeFiles/ClientSideRaspi.dir
+/home/bilal/Documents/client-side-raspi/build/CMakeFiles/ClientSideRaspi_autogen.dir

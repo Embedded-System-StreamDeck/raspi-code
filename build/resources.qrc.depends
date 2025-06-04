@@ -1,0 +1,37 @@
+<RCC>
+    <qresource prefix="/">
+        <file>resources/icons/none.png</file>
+        <file>resources/icons/mute.png</file>
+        <file>resources/icons/unmute.png</file>
+        <file>resources/icons/play.png</file>
+        <file>resources/icons/pause.png</file>
+        <file>resources/icons/record.png</file>
+        <file>resources/icons/stop.png</file>
+        <file>resources/icons/settings.png</file>
+        <file>resources/icons/volume-up.png</file>
+        <file>resources/icons/volume-down.png</file>
+        <file>resources/icons/screen.png</file>
+        <file>resources/icons/amazon.png</file>
+        <file>resources/icons/calculator.png</file>
+        <file>resources/icons/calendar.png</file>
+        <file>resources/icons/document-viewer.png</file>
+        <file>resources/icons/email-editor.png</file>
+        <file>resources/icons/file-manager.png</file>
+        <file>resources/icons/github.png</file>
+        <file>resources/icons/google.png</file>
+        <file>resources/icons/instagram.png</file>
+        <file>resources/icons/linkedin.png</file>
+        <file>resources/icons/lock.png</file>
+        <file>resources/icons/next.png</file>
+        <file>resources/icons/previous.png</file>
+        <file>resources/icons/refresh.png</file>
+        <file>resources/icons/shutdown.png</file>
+        <file>resources/icons/system-monitor.png</file>
+        <file>resources/icons/terminal.png</file>
+        <file>resources/icons/text-editor.png</file>
+        <file>resources/icons/unlock.png</file>
+        <file>resources/icons/videp-player.png</file>
+        <file>resources/icons/youtube.png</file>
+        <file>resources/background/background.jpg</file>
+    </qresource>
+</RCC>

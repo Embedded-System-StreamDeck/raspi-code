@@ -20,11 +20,10 @@ Window {
         anchors.fill: parent
         color: "#121212"
         
-        Image {
-            anchors.fill: parent
-            source: "qrc:/resources/background/background.jpg"
-            fillMode: Image.PreserveAspectCrop
-            opacity: 0.2
+        // Use gradient instead of image to avoid loading errors
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#1a2a3a" }
+            GradientStop { position: 1.0; color: "#0c1622" }
         }
     }
 
@@ -101,9 +100,7 @@ Window {
                     const processedButtons = obj.buttons.map(btn => {
                         return {
                             label: btn.label || "Button",
-                            command: btn.command || "none",
-                            // We don't use icons anymore, but keep the property for compatibility
-                            iconSource: ""
+                            command: btn.command || "none"
                         }
                     })
                     buttonGrid.buttonList = processedButtons

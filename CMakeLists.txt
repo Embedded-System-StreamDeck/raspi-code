@@ -21,10 +21,9 @@ include_directories(include)
 
 file(GLOB SOURCES "src/*.cpp")
 
-# QML ve resource dosyalarını ekle
+# Sadece QML dosyalarını ekle
 qt5_add_resources(QML_RESOURCES qml.qrc)
-qt5_add_resources(APP_RESOURCES resources.qrc)
 
-add_executable(ClientSideRaspi ${SOURCES} ${QML_RESOURCES} ${APP_RESOURCES})
+add_executable(ClientSideRaspi ${SOURCES} ${QML_RESOURCES})
 
 target_link_libraries(ClientSideRaspi Qt5::Core Qt5::Gui Qt5::Widgets Qt5::Network Qt5::Qml Qt5::Quick)

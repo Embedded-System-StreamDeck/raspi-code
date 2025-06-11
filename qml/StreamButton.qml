@@ -7,7 +7,6 @@ Item {
     width: 100
     height: 100
 
-    property string iconSource
     property string buttonText
     property string command
 

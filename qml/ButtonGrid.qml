@@ -32,8 +32,6 @@ Item {
                 Layout.margins: 5
                 buttonText: modelData.label || "Button " + (index + 1)
                 command: modelData.command || "none"
-                // We're not using icons anymore, but keep the property for compatibility
-                iconSource: ""
             }
         }
     }

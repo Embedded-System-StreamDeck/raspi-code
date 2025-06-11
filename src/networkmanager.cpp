@@ -93,8 +93,11 @@ void NetworkManager::disconnectFromServer()
 void NetworkManager::discoverServer()
 {
     if (m_discovering) {
+        qDebug() << "Already discovering, ignoring request";
         return; // Already discovering
     }
+    
+    qDebug() << "Starting server discovery on port" << DISCOVERY_PORT;
     
     // Close any existing socket
     if (m_discoverySocket->state() != QAbstractSocket::UnconnectedState) {
@@ -114,7 +117,7 @@ void NetworkManager::discoverServer()
     sendDiscoveryRequest();
     m_discoveryTimer->start(DISCOVERY_INTERVAL);
     
-    qDebug() << "Server discovery started";
+    qDebug() << "Server discovery started, sending requests every" << DISCOVERY_INTERVAL << "ms";
 }
 
 void NetworkManager::stopDiscovery()
@@ -144,12 +147,14 @@ void NetworkManager::sendDiscoveryRequest()
     if (bytesWritten != datagram.size()) {
         qWarning() << "Failed to send discovery request:" << m_discoverySocket->errorString();
     } else {
-        qDebug() << "Discovery request sent to broadcast address";
+        qDebug() << "Discovery request sent to broadcast address on port" << DISCOVERY_PORT;
     }
 }
 
 void NetworkManager::processPendingDatagrams()
 {
+    qDebug() << "Processing pending datagrams...";
+    
     while (m_discoverySocket->hasPendingDatagrams()) {
         QNetworkDatagram datagram = m_discoverySocket->receiveDatagram();
         
@@ -158,7 +163,7 @@ void NetworkManager::processPendingDatagrams()
             QString response = QString::fromUtf8(data);
             QHostAddress senderAddress = datagram.senderAddress();
             
-            qDebug() << "Received response from" << senderAddress.toString() << ":" << response;
+            qDebug() << "Received UDP response from" << senderAddress.toString() << ":" << response;
             
             // Check if this is a server response
             if (response.startsWith("RASPI_SERVER_AVAILABLE:")) {
@@ -183,11 +188,20 @@ void NetworkManager::processPendingDatagrams()
                     emit serverDiscovered(serverAddress, serverPort);
                     
                     // Auto-connect to the discovered server
+                    qDebug() << "Auto-connecting to discovered server...";
                     connectToServer();
+                } else {
+                    qWarning() << "Invalid port in server response:" << response;
                 }
+            } else {
+                qDebug() << "Ignoring unknown response:" << response;
             }
+        } else {
+            qWarning() << "Received invalid datagram";
         }
     }
+    
+    qDebug() << "Finished processing datagrams";
 }
 
 bool NetworkManager::sendCommand(const QString &commandId, const QVariant &parameters)
@@ -304,25 +318,50 @@ void NetworkManager::onDataReceived()
     QByteArray data = m_socket->readAll();
     qDebug() << "Received data from server, size:" << data.size();
 
-    // JSON ayrıştırması
+    // Trim any whitespace and ensure data ends with a valid JSON
+    data = data.trimmed();
+    
+    // JSON parsing
     QJsonParseError err;
     QJsonDocument doc = QJsonDocument::fromJson(data, &err);
     if (err.error != QJsonParseError::NoError) {
-        qWarning() << "JSON parse hatası:" << err.errorString() << "Ham veri:" << data;
-        return;
+        qWarning() << "JSON parse error:" << err.errorString() << "Raw data:" << data;
+        
+        // Try to handle newline-terminated JSON (some servers send JSON with newlines)
+        QList<QByteArray> jsonParts = data.split('\n');
+        for (const QByteArray& part : jsonParts) {
+            if (part.trimmed().isEmpty()) {
+                continue;
+            }
+            
+            QJsonParseError partErr;
+            QJsonDocument partDoc = QJsonDocument::fromJson(part.trimmed(), &partErr);
+            if (partErr.error == QJsonParseError::NoError) {
+                // Successfully parsed a part
+                doc = partDoc;
+                break;
+            }
+        }
+        
+        // If we still couldn't parse, return
+        if (err.error != QJsonParseError::NoError) {
+            QString message = QString::fromUtf8(data);
+            emit messageReceived(message);
+            return;
+        }
     }
 
     QJsonObject obj = doc.object();
     if (obj.contains("buttons") && obj["buttons"].isArray()) {
         QJsonArray buttonArray = obj["buttons"].toArray();
-        qDebug() << "Butonlar alındı, sayı:" << buttonArray.size();
+        qDebug() << "Buttons received, count:" << buttonArray.size();
         
-        // JSON string olarak mesajı gönder
+        // Send JSON string as message
         QString jsonString = QString::fromUtf8(data);
         emit messageReceived(jsonString);
     } else {
-        qWarning() << "Gelen JSON'da buttons alanı bulunamadı veya array değil";
-        // Raw mesaj olarak da ilet
+        qWarning() << "Incoming JSON doesn't contain buttons field or it's not an array";
+        // Also send as raw message
         QString message = QString::fromUtf8(data);
         emit messageReceived(message);
     }

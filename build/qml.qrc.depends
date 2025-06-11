@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/StreamButton.qml</file>
+        <file>qml/ButtonGrid.qml</file>
+        <file>qml/SettingsPanel.qml</file>
+    </qresource>
+</RCC>

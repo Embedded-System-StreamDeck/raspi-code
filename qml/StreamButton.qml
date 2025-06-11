@@ -1,6 +1,7 @@
 // StreamButton.qml
 import QtQuick 2.15
 import QtQuick.Controls 2.15
+import QtQuick.Layouts 1.15
 
 Item {
     id: root
@@ -30,19 +31,25 @@ Item {
             }
         ]
 
-        // Add transitions for smooth animation
+        // Simplified transitions without ScaleAnimation
         transitions: [
             Transition {
                 from: ""
                 to: "pressed"
                 ColorAnimation { duration: 100 }
-                ScaleAnimation { duration: 100 }
+                PropertyAnimation { 
+                    property: "scale"; 
+                    duration: 100 
+                }
             },
             Transition {
                 from: "pressed"
                 to: ""
                 ColorAnimation { duration: 200 }
-                ScaleAnimation { duration: 200 }
+                PropertyAnimation { 
+                    property: "scale"; 
+                    duration: 200 
+                }
             }
         ]
 

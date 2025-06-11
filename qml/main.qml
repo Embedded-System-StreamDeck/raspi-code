@@ -32,14 +32,22 @@ Window {
         id: connectionStatus
         width: parent.width
         height: 30  // Reduced height to accommodate smaller screen
-        color: networkManager.connected ? "#1e824c" : "#e74c3c"
+        color: {
+            if (networkManager.connected) return "#1e824c" // Green for connected
+            if (networkManager.discovering) return "#f39c12" // Orange for discovering
+            return "#e74c3c" // Red for disconnected
+        }
         opacity: 0.8
 
         Text {
             anchors.centerIn: parent
-            text: networkManager.connected 
-                  ? qsTr("Connected to: %1:%2 (Device IP)").arg(networkManager.serverAddress).arg(networkManager.serverPort)
-                  : qsTr("Disconnected - Tap to connect")
+            text: {
+                if (networkManager.connected) 
+                    return qsTr("Connected to: %1:%2").arg(networkManager.serverAddress).arg(networkManager.serverPort)
+                if (networkManager.discovering)
+                    return qsTr("Discovering server... Tap to cancel")
+                return qsTr("Disconnected - Tap to discover")
+            }
             color: "white"
             font.pixelSize: 14  // Smaller font size
         }
@@ -47,10 +55,15 @@ Window {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                if (!networkManager.connected) {
-                    networkManager.connectToServer();
+                if (networkManager.discovering) {
+                    // If discovering, stop it
+                    networkManager.stopDiscovery()
+                } else if (!networkManager.connected) {
+                    // If disconnected, start discovery
+                    networkManager.discoverServer()
                 } else {
-                    isSettingsOpen = !isSettingsOpen;
+                    // If connected, toggle settings
+                    isSettingsOpen = !isSettingsOpen
                 }
             }
         }
@@ -78,18 +91,20 @@ Window {
     // Gelen JSON veriyi debug amaçlı logla
     Connections {
         target: networkManager
-        onMessageReceived: {
+        function onMessageReceived(message) {
             let obj = JSON.parse(message)
             if (obj.buttons) {
                 buttonGrid.buttonList = obj.buttons
             }
-            
+        }
+        
+        function onServerDiscovered(address, port) {
+            console.log("Server discovered at: " + address + ":" + port)
         }
     }
 
-
     Component.onCompleted: {
-        // The server address is already set to device IP in NetworkManager constructor
-        networkManager.connectToServer();
+        // Start server discovery automatically
+        networkManager.discoverServer();
     }
 }

@@ -130,6 +130,40 @@ Rectangle {
                             }
                         }
                     }
+                    
+                    RowLayout {
+                        Layout.fillWidth: true
+                        Button {
+                            text: networkManager.discovering ? "Cancel Discovery" : "Discover Server"
+                            Layout.fillWidth: true
+                            onClicked: {
+                                if (networkManager.discovering) {
+                                    networkManager.stopDiscovery();
+                                } else {
+                                    networkManager.discoverServer();
+                                }
+                            }
+                            background: Rectangle {
+                                color: networkManager.discovering ? "#e67e22" : "#3498db"
+                                radius: 4
+                            }
+                            contentItem: Text {
+                                text: parent.text
+                                color: "white"
+                                horizontalAlignment: Text.AlignHCenter
+                                verticalAlignment: Text.AlignVCenter
+                            }
+                        }
+                    }
+
+                    Text {
+                        text: networkManager.discovering ? "Searching for server..." : 
+                              (networkManager.connected ? "Connected to server" : "Not connected")
+                        color: networkManager.connected ? "#2ecc71" : 
+                               (networkManager.discovering ? "#f39c12" : "#e74c3c")
+                        Layout.fillWidth: true
+                        horizontalAlignment: Text.AlignHCenter
+                    }
                 }
             }
 
@@ -202,7 +236,7 @@ Rectangle {
                     Button {
                         text: "Refresh IP Address"
                         Layout.fillWidth: true
-                        onClicked: networkManager.queryDeviceIpAddress()
+                        onClicked: networkManager.updateServerWithDeviceIp()
                         background: Rectangle {
                             color: "#3498db"
                             radius: 4

@@ -6,6 +6,7 @@
 #include <QDebug>
 #include <QProcess>
 #include <QRegularExpression>
+#include <QNetworkDatagram>
 #include "clientsocket.h"
 
 NetworkManager::NetworkManager(QObject *parent)
@@ -14,6 +15,9 @@ NetworkManager::NetworkManager(QObject *parent)
     , m_serverAddress("192.168.207.213") // Varsayılan sunucu adresi
     , m_serverPort(5000) // Varsayılan port
     , m_connected(false)
+    , m_discoverySocket(new QUdpSocket(this))
+    , m_discoveryTimer(new QTimer(this))
+    , m_discovering(false)
 {
     connect(m_socket, &QTcpSocket::connected, this, &NetworkManager::onConnected);
     connect(m_socket, &QTcpSocket::disconnected, this, &NetworkManager::onDisconnected);
@@ -21,13 +25,28 @@ NetworkManager::NetworkManager(QObject *parent)
     connect(m_socket, &QTcpSocket::errorOccurred, this, &NetworkManager::onError);
     connect(m_socket, &QTcpSocket::readyRead, this, &NetworkManager::onDataReceived);
     
-    // Start by updating server address with device's IP
-    updateServerWithDeviceIp();
+    // Discovery socket connections
+    connect(m_discoverySocket, &QUdpSocket::readyRead, this, &NetworkManager::processPendingDatagrams);
+    connect(m_discoveryTimer, &QTimer::timeout, this, &NetworkManager::sendDiscoveryRequest);
+    
+    // Try auto-discovery first
+    discoverServer();
+}
+
+NetworkManager::~NetworkManager()
+{
+    stopDiscovery();
+    disconnectFromServer();
 }
 
 bool NetworkManager::isConnected() const
 {
     return m_connected;
+}
+
+bool NetworkManager::isDiscovering() const
+{
+    return m_discovering;
 }
 
 QString NetworkManager::serverAddress() const
@@ -68,6 +87,106 @@ void NetworkManager::disconnectFromServer()
 {
     if (m_socket->state() == QAbstractSocket::ConnectedState) {
         m_socket->disconnectFromHost();
+    }
+}
+
+void NetworkManager::discoverServer()
+{
+    if (m_discovering) {
+        return; // Already discovering
+    }
+    
+    // Close any existing socket
+    if (m_discoverySocket->state() != QAbstractSocket::UnconnectedState) {
+        m_discoverySocket->close();
+    }
+    
+    // Bind to any available port
+    if (!m_discoverySocket->bind(QHostAddress::Any, 0, QAbstractSocket::ShareAddress)) {
+        qWarning() << "Failed to bind discovery socket:" << m_discoverySocket->errorString();
+        return;
+    }
+    
+    m_discovering = true;
+    emit discoveringStatusChanged(true);
+    
+    // Start sending discovery requests periodically
+    sendDiscoveryRequest();
+    m_discoveryTimer->start(DISCOVERY_INTERVAL);
+    
+    qDebug() << "Server discovery started";
+}
+
+void NetworkManager::stopDiscovery()
+{
+    if (!m_discovering) {
+        return;
+    }
+    
+    m_discoveryTimer->stop();
+    m_discoverySocket->close();
+    
+    m_discovering = false;
+    emit discoveringStatusChanged(false);
+    
+    qDebug() << "Server discovery stopped";
+}
+
+void NetworkManager::sendDiscoveryRequest()
+{
+    // Create discovery request message
+    QByteArray datagram = "RASPI_DISCOVERY_REQUEST";
+    
+    // Send to broadcast address on discovery port
+    qint64 bytesWritten = m_discoverySocket->writeDatagram(
+        datagram, QHostAddress::Broadcast, DISCOVERY_PORT);
+        
+    if (bytesWritten != datagram.size()) {
+        qWarning() << "Failed to send discovery request:" << m_discoverySocket->errorString();
+    } else {
+        qDebug() << "Discovery request sent to broadcast address";
+    }
+}
+
+void NetworkManager::processPendingDatagrams()
+{
+    while (m_discoverySocket->hasPendingDatagrams()) {
+        QNetworkDatagram datagram = m_discoverySocket->receiveDatagram();
+        
+        if (datagram.isValid()) {
+            QByteArray data = datagram.data();
+            QString response = QString::fromUtf8(data);
+            QHostAddress senderAddress = datagram.senderAddress();
+            
+            qDebug() << "Received response from" << senderAddress.toString() << ":" << response;
+            
+            // Check if this is a server response
+            if (response.startsWith("RASPI_SERVER_AVAILABLE:")) {
+                // Extract port number
+                int portIndex = response.indexOf(':') + 1;
+                int serverPort = response.mid(portIndex).toInt();
+                
+                if (serverPort > 0) {
+                    // Server found!
+                    QString serverAddress = senderAddress.toString();
+                    
+                    qDebug() << "Server discovered at" << serverAddress << ":" << serverPort;
+                    
+                    // Stop discovery
+                    stopDiscovery();
+                    
+                    // Update server address and port
+                    setServerAddress(serverAddress);
+                    setServerPort(serverPort);
+                    
+                    // Emit discovery success signal
+                    emit serverDiscovered(serverAddress, serverPort);
+                    
+                    // Auto-connect to the discovered server
+                    connectToServer();
+                }
+            }
+        }
     }
 }
 
@@ -135,6 +254,12 @@ void NetworkManager::onError(QAbstractSocket::SocketError socketError)
     QString errorMessage = m_socket->errorString();
     qWarning() << "Socket error:" << socketError << errorMessage;
     emit errorOccurred(errorMessage);
+    
+    // If connection failed, try discovery again
+    if (socketError == QAbstractSocket::ConnectionRefusedError || 
+        socketError == QAbstractSocket::HostNotFoundError) {
+        discoverServer();
+    }
 }
 
 void NetworkManager::updateServerWithDeviceIp()

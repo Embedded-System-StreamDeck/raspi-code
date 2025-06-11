@@ -88,13 +88,29 @@ Window {
         }
     }
 
-    // Gelen JSON veriyi debug amaçlı logla
+    // Gelen JSON veriyi işle
     Connections {
         target: networkManager
         function onMessageReceived(message) {
-            let obj = JSON.parse(message)
-            if (obj.buttons) {
-                buttonGrid.buttonList = obj.buttons
+            console.log("Received message from server:", message)
+            try {
+                let obj = JSON.parse(message)
+                if (obj.buttons) {
+                    // Process button configuration from server
+                    // Make sure each button has required properties
+                    const processedButtons = obj.buttons.map(btn => {
+                        return {
+                            label: btn.label || "Button",
+                            command: btn.command || "none",
+                            // We don't use icons anymore, but keep the property for compatibility
+                            iconSource: ""
+                        }
+                    })
+                    buttonGrid.buttonList = processedButtons
+                    console.log("Updated button list:", JSON.stringify(processedButtons))
+                }
+            } catch (e) {
+                console.error("Error parsing message:", e)
             }
         }
         

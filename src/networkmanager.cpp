@@ -237,8 +237,11 @@ bool NetworkManager::sendCommand(const QString &commandId, const QVariant &param
 bool NetworkManager::sendRawCommand(const QString &command)
 {
     if (m_socket->state() != QAbstractSocket::ConnectedState) {
+        qWarning() << "Cannot send command, not connected to server:" << command;
         return false;
     }
+    
+    qDebug() << "Sending command to server:" << command;
     
     QByteArray data = command.toUtf8();
     if (!data.endsWith('\n')) {
@@ -246,7 +249,13 @@ bool NetworkManager::sendRawCommand(const QString &command)
     }
     
     qint64 bytesWritten = m_socket->write(data);
-    return bytesWritten == data.size();
+    if (bytesWritten != data.size()) {
+        qWarning() << "Failed to send command, only" << bytesWritten << "bytes written out of" << data.size();
+        return false;
+    }
+    
+    qDebug() << "Command sent successfully:" << command;
+    return true;
 }
 
 void NetworkManager::onConnected()

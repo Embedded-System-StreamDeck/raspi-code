@@ -12,33 +12,60 @@ Item {
     property string command
 
     Rectangle {
+        id: buttonBackground
         anchors.fill: parent
         radius: 10
         color: "#2c3e50"
+        border.color: "#3498db"
+        border.width: 2
 
-        Column {
+        // Add a state for visual feedback
+        states: [
+            State {
+                name: "pressed"
+                PropertyChanges {
+                    target: buttonBackground
+                    color: "#1a5276" // Darker color when pressed
+                    scale: 0.95
+                }
+            }
+        ]
+
+        // Add transitions for smooth animation
+        transitions: [
+            Transition {
+                from: ""
+                to: "pressed"
+                ColorAnimation { duration: 100 }
+                ScaleAnimation { duration: 100 }
+            },
+            Transition {
+                from: "pressed"
+                to: ""
+                ColorAnimation { duration: 200 }
+                ScaleAnimation { duration: 200 }
+            }
+        ]
+
+        Text {
             anchors.centerIn: parent
-            spacing: 4
-
-            Image {
-                source: iconSource
-                width: 40
-                height: 40
-                fillMode: Image.PreserveAspectFit
-            }
-
-            Text {
-                text: buttonText
-                color: "white"
-                font.pixelSize: 12
-                wrapMode: Text.WordWrap
-                horizontalAlignment: Text.AlignHCenter
-            }
+            text: buttonText
+            color: "white"
+            font.pixelSize: 18
+            font.bold: true
+            wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
+            width: parent.width - 10
+            elide: Text.ElideRight
         }
 
         MouseArea {
             anchors.fill: parent
+            onPressed: buttonBackground.state = "pressed"
+            onReleased: buttonBackground.state = ""
+            onCanceled: buttonBackground.state = ""
             onClicked: {
+                console.log("Button clicked: " + buttonText + ", sending command: " + command)
                 networkManager.sendRawCommand(command)
             }
         }

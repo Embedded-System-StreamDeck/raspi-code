@@ -5,35 +5,35 @@ Item {
     id: root
     property var buttonList: []
     
-    // Varsayılan 6 buton için array
+    // Predefined buttons for common functions
     property var defaultButtons: [
-        { label: "Button 1", command: "none", iconSource: "qrc:/resources/icons/none.png" },
-        { label: "Button 2", command: "none", iconSource: "qrc:/resources/icons/none.png" },
-        { label: "Button 3", command: "none", iconSource: "qrc:/resources/icons/none.png" },
-        { label: "Button 4", command: "none", iconSource: "qrc:/resources/icons/none.png" },
-        { label: "Button 5", command: "none", iconSource: "qrc:/resources/icons/none.png" },
-        { label: "Button 6", command: "none", iconSource: "qrc:/resources/icons/none.png" }
+        { label: "Volume Up", command: "volume_up" },
+        { label: "Volume Down", command: "volume_down" },
+        { label: "Mute", command: "mute" },
+        { label: "Unmute", command: "unmute" },
+        { label: "Screenshot", command: "screenshot" },
+        { label: "Stop", command: "record_stop" }
     ]
 
     GridLayout {
         anchors.fill: parent
-        anchors.margins: 50  // Increased outer margins
-        columns: 3 // 3x2 grid layout
-        rowSpacing: 50       // Increased row spacing
-        columnSpacing: 50    // Increased column spacing
+        anchors.margins: 20
+        columns: 2 // 2x3 grid layout for better readability
+        rowSpacing: 20
+        columnSpacing: 20
 
         Repeater {
             model: root.buttonList.length > 0 ? root.buttonList : root.defaultButtons
             delegate: StreamButton {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                Layout.preferredWidth: (parent.width - 30) / 3  // Adjusted width calculation with spacing
-                Layout.preferredHeight: (parent.height - 15) / 2 // Adjusted height calculation with spacing
-                Layout.margins: 5  // Additional margin around each button
+                Layout.preferredWidth: (parent.width - 20) / 2
+                Layout.preferredHeight: (parent.height - 40) / 3
+                Layout.margins: 5
                 buttonText: modelData.label || "Button " + (index + 1)
                 command: modelData.command || "none"
-                iconSource: modelData.iconSource && modelData.iconSource !== "" ? 
-                           modelData.iconSource : "qrc:/resources/icons/none.png"
+                // We're not using icons anymore, but keep the property for compatibility
+                iconSource: ""
             }
         }
     }
